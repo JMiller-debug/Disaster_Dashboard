@@ -1,0 +1,48 @@
+services:
+  backend:
+    build: ./dataserver
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - WATCHFILES_FORCE_POLLING=true
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/earthquakes')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./dataserver/app
+          target: /app/app
+        - action: rebuild
+          path: ./dataserver/pyproject.toml
+        - action: rebuild
+          path: ./dataserver/uv.lock
+
+  frontend:
+    build:
+      context: ./ui
+      target: dev
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_PROXY=http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: sync
+          path: ./ui/src
+          target: /app/src
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: ./ui/package.json
+        - action: rebuild
+          path: ./ui/package-lock.json

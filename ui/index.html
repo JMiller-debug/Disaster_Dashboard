@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-[#0f1117] text-slate-200">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Earthquake Dashboard</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body class="h-screen w-screen overflow-hidden">
+    <div id="app" class="flex h-full w-full">
+
+      <!-- Sidebar -->
+      <aside id="sidebar" class="flex flex-col gap-5 p-5 bg-surface border-r border-border overflow-y-auto"
+        style="width: 280px; min-width: 200px; max-width: 480px;">
+        <h1 class="text-lg font-semibold text-accent">Earthquakes</h1>
+
+        <!-- Magnitude slider -->
+        <div class="flex flex-col gap-2">
+          <label class="text-xs uppercase tracking-wider text-slate-500">
+            Min magnitude: <span id="min-mag-value" class="text-slate-300">0</span>
+          </label>
+          <input id="min-mag" type="range" min="0" max="9" step="0.5" value="0"
+            class="w-full accent-accent" />
+        </div>
+
+        <!-- Time window tabs -->
+        <div class="flex flex-col gap-2">
+          <label class="text-xs uppercase tracking-wider text-slate-500">Time window</label>
+          <div id="window-tabs" class="flex gap-1">
+            <button class="tab flex-1 py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-window="hour">1h</button>
+            <button class="tab flex-1 py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-window="day">24h</button>
+            <button class="tab flex-1 py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-window="week">7d</button>
+            <button class="tab flex-1 py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-window="month">30d</button>
+          </div>
+        </div>
+
+        <p id="quake-count" class="text-xs text-slate-500"></p>
+
+        <!-- Refresh status -->
+        <div class="flex items-center justify-between gap-2">
+          <span id="refresh-status" class="text-xs text-slate-500">Never refreshed</span>
+          <button id="refresh-btn"
+            class="flex items-center gap-1.5 text-xs text-slate-400 hover:text-accent border border-border rounded-md px-2.5 py-1.5 transition-colors cursor-pointer">
+            <span id="refresh-icon">↻</span>
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        <ul id="quake-list" class="flex flex-col gap-1.5 overflow-y-auto"></ul>
+      </aside>
+
+      <!-- Resize handle -->
+      <div id="resize-handle"
+        class="w-1 shrink-0 cursor-col-resize bg-border hover:bg-accent active:bg-accent transition-colors touch-none">
+      </div>
+
+      <!-- Map -->
+      <div id="map" class="flex-1 h-full"></div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

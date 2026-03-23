@@ -1,0 +1,41 @@
+@import "tailwindcss";
+@import "ol/ol.css";
+
+@theme {
+	--color-surface: #1a1d27;
+	--color-border: #2a2d3a;
+	--color-accent: #f97316;
+}
+
+.tab.active {
+	background-color: var(--color-accent);
+	border-color: var(--color-accent);
+	color: #fff;
+}
+
+#sidebar {
+	scrollbar-width: thin;
+	scrollbar-color: #2a2d3a transparent;
+}
+
+#sidebar:hover {
+	scrollbar-color: #3f4355 transparent;
+}
+
+/* Webkit fallback (Chrome, Safari) */
+#sidebar::-webkit-scrollbar {
+	width: 4px;
+}
+
+#sidebar::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+#sidebar::-webkit-scrollbar-thumb {
+	background: #2a2d3a;
+	border-radius: 9999px;
+}
+
+#sidebar:hover::-webkit-scrollbar-thumb {
+	background: #3f4355;
+}

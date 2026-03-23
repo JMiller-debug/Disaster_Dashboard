@@ -1,0 +1,31 @@
+[project]
+name = "datasever"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.135.1",
+    "httpx>=0.28.1",
+    "uvicorn>=0.42.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-asyncio>=1.3.0",
+    "ruff>=0.15.7",
+    "ty>=0.0.24",
+]
+
+[tool.uv]
+package = true
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["T201", "D203", "D212", "COM812"]
+
+[tool.ty.src]
+include = [
+    "src",
+]
