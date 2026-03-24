@@ -43,14 +43,16 @@ map.on("click", (e) => {
 	if (mode !== "points") return;
 	popup.hide();
 
+	const items: { coords: number[]; props: EarthquakeFeature["properties"] }[] =
+		[];
+
 	map.forEachFeatureAtPixel(e.pixel, (feat) => {
 		const props = feat.getProperties() as EarthquakeFeature["properties"];
-		const geom = feat.getGeometry();
-		if (!geom) return;
-		// @ts-expect-error — getCoordinates exists on Point geometry
-		popup.show(geom.getCoordinates(), props);
-		return true;
+		if (!feat.getGeometry()) return;
+		items.push({ coords: e.coordinate, props }); // use click coord, not feature coord
 	});
+
+	if (items.length > 0) popup.show(items);
 });
 
 map.on("pointermove", (e) => {
@@ -108,9 +110,17 @@ async function load() {
 
 function flyTo(feature: EarthquakeFeature) {
 	const [lng, lat] = feature.geometry.coordinates;
-	map
-		.getView()
-		.animate({ center: fromLonLat([lng, lat]), zoom: 6, duration: 600 });
+	const dest = fromLonLat([lng, lat]);
+
+	// switch to points mode so the popup is visible
+	if (mode !== "points") {
+		mode = "points";
+		setMode(heatmap, points, mode);
+	}
+
+	map.getView().animate({ center: dest, zoom: 6, duration: 600 }, () => {
+		popup.show([{ coords: dest, props: feature.properties }]);
+	});
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────

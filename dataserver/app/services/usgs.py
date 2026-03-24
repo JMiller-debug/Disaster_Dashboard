@@ -92,6 +92,9 @@ class USGSService:
 
         raw = response.json()
         features = [EarthquakeFeature(**f) for f in raw["features"]]
+        # Add depth from geometry into properties for convenience
+        for feat in features:
+            feat.properties.depth = feat.geometry.coordinates[2]
         collection = EarthquakeCollection(
             type=raw["type"],
             features=features,

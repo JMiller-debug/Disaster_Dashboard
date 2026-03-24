@@ -81,15 +81,14 @@ function renderFull(p: EarthquakeProperties): string {
 type PopupItem = { coords: number[]; props: EarthquakeProperties };
 
 function renderPickerList(items: PopupItem[]): string {
-	console.debug("[popup] renderPickerList items:", items);
-	const safe = items.filter((item) => item?.props?.mag !== undefined);
+	// items are pre-sorted by the caller
 	return `
     <div class="flex items-center justify-between mb-2">
-      <span class="text-xs text-slate-400">${safe.length} earthquakes here</span>
+      <span class="text-xs text-slate-400">${items.length} earthquakes here</span>
       <button id="popup-close" class="text-slate-500 hover:text-slate-200 transition-colors text-lg leading-none">✕</button>
     </div>
     <ul class="flex flex-col gap-1">
-      ${safe
+      ${items
 				.map(
 					(item, i) => `
         <li data-index="${i}"
@@ -104,7 +103,6 @@ function renderPickerList(items: PopupItem[]): string {
     </ul>
   `;
 }
-
 export function createPopup(map: Map) {
 	const el = document.createElement("div");
 	el.className = [
@@ -136,7 +134,10 @@ export function createPopup(map: Map) {
 	}
 
 	function showMulti(items: PopupItem[]) {
-		const safe = items.filter((item) => item?.props?.mag !== undefined);
+		const safe = items
+			.filter((item) => item?.props?.mag !== undefined)
+			.sort((a, b) => (b.props.mag ?? 0) - (a.props.mag ?? 0));
+
 		if (safe.length === 0) return;
 		if (safe.length === 1) {
 			showSingle(safe[0].coords, safe[0].props);

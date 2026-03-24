@@ -1,0 +1,8 @@
+[project]
+name = "disaster-shared"
+version = "0.1.0"
+description = "Shared utilities for disaster microservices"
+requires-python = ">=3.13"
+
+[tool.uv]
+package = true

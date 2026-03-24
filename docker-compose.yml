@@ -1,14 +1,38 @@
 services:
-  backend:
-    build: ./dataserver
+
+  # ── Gateway ──────────────────────────────────────────────────────────────
+  gateway:
+    build: ./gateway
     restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
+      - EARTHQUAKES_URL=http://earthquakes:8001
+      - TORNADOES_URL=http://tornadoes:8002
+      - CYCLONES_URL=http://cyclones:8003
+      - FIRES_URL=http://fires:8004
+    depends_on:
+      earthquakes:
+        condition: service_healthy
+      tornadoes:
+        condition: service_healthy
+      cyclones:
+        condition: service_healthy
+      fires:
+        condition: service_healthy
+
+  # ── Microservices ─────────────────────────────────────────────────────────
+  earthquakes:
+    build:
+      context: .
+      dockerfile: earthquakes/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
       - PYTHONUNBUFFERED=1
-      - WATCHFILES_FORCE_POLLING=true
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/earthquakes')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/api/earthquakes')"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -16,13 +40,83 @@ services:
     develop:
       watch:
         - action: sync+restart
-          path: ./dataserver/app
+          path: ./earthquakes/app
           target: /app/app
         - action: rebuild
-          path: ./dataserver/pyproject.toml
-        - action: rebuild
-          path: ./dataserver/uv.lock
+          path: ./earthquakes/pyproject.toml
 
+  tornadoes:
+    build:
+      context: .
+      dockerfile: tornadoes/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8002/api/tornadoes')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./tornadoes/app
+          target: /app/app
+        - action: rebuild
+          path: ./tornadoes/pyproject.toml
+
+  cyclones:
+    build:
+      context: .
+      dockerfile: cyclones/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8003/api/cyclones')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./cyclones/app
+          target: /app/app
+        - action: rebuild
+          path: ./cyclones/pyproject.toml
+
+  fires:
+    build:
+      context: .
+      dockerfile: fires/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8004:8004"
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8004/api/fires')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./fires/app
+          target: /app/app
+        - action: rebuild
+          path: ./fires/pyproject.toml
+
+  # ── Frontend ──────────────────────────────────────────────────────────────
   frontend:
     build:
       context: ./ui
@@ -31,10 +125,9 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - VITE_API_PROXY=http://backend:8000
+      - VITE_API_PROXY=http://gateway:8000
     depends_on:
-      backend:
-        condition: service_healthy
+      - gateway
     develop:
       watch:
         - action: sync
