@@ -1,0 +1,12 @@
+[tool.uv.workspace]
+members = [
+    "shared",
+    "gateway",
+    "earthquakes",
+    "tornadoes",
+    "cyclones",
+    "fires",
+]
+
+[tool.uv.sources]
+disaster-shared = { workspace = true }

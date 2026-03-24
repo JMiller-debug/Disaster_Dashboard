@@ -2,7 +2,9 @@ services:
 
   # ── Gateway ──────────────────────────────────────────────────────────────
   gateway:
-    build: ./gateway
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
     restart: unless-stopped
     ports:
       - "8000:8000"

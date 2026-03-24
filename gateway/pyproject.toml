@@ -11,3 +11,12 @@ dependencies = [
 
 [tool.uv]
 package = true
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["T201", "D203", "D212", "COM812"]
+
+[tool.ty.src]
+include = [
+    "src",
+]
