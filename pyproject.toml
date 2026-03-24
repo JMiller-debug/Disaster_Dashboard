@@ -10,3 +10,8 @@ members = [
 
 [tool.uv.sources]
 disaster-shared = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "requests>=2.32.5",
+]

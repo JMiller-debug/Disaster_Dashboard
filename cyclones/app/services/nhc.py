@@ -1,12 +1,12 @@
 """NOAA NHC + IBTrACS cyclone service (global coverage)."""
 
-import logging
 import asyncio
+import logging
 
 import httpx
+from shared.cache import TTLCache
 
 from app.models import CycloneCollection, ForecastTrack, StormFeature, StormProperties
-from shared.cache import TTLCache
 
 logger = logging.getLogger(__name__)
 
@@ -23,14 +23,19 @@ CACHE_TTL = 360  # 6 minutes — NHC updates every 6h (3h when near shore)
 
 
 class NHCService:
+    """NHC Service for cyclones."""
+
     def __init__(self) -> None:
+        """Init class."""
         self._client = httpx.AsyncClient(timeout=15.0)
         self._cache: TTLCache[CycloneCollection] = TTLCache()
 
     async def close(self) -> None:
+        """Close connection."""
         await self._client.aclose()
 
     async def fetch(self) -> CycloneCollection:
+        """Fetch CycloneCollection."""
         if cached := self._cache.get("cyclones"):
             return cached
 
@@ -61,6 +66,7 @@ class NHCService:
 
 
 def _parse_storm(raw: dict) -> StormFeature | None:
+    """Parse raw response and return StormFeature."""
     lat = raw.get("latitudeNumeric")
     lon = raw.get("longitudeNumeric")
     if lat is None or lon is None:
@@ -83,6 +89,7 @@ def _parse_storm(raw: dict) -> StormFeature | None:
 
 
 async def _fetch_track(client: httpx.AsyncClient, storm: dict) -> ForecastTrack | None:
+    """Fetch the track of a specific cyclone."""
     storm_id = storm.get("id", "")
     if not storm_id:
         return None
@@ -108,6 +115,6 @@ async def _fetch_track(client: httpx.AsyncClient, storm: dict) -> ForecastTrack 
             track=track_geojson,
             cone=cone_geojson,
         )
-    except Exception:
+    except Exception:  # noqa: BLE001
         logger.warning("Failed to fetch track for storm %s", storm_id)
         return None

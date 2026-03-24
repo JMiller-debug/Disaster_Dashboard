@@ -13,6 +13,7 @@ from app.services.nhc import NHCService
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:
+    """Fast API Lifespane."""
     app.state.nhc = NHCService()
     yield
     await app.state.nhc.close()

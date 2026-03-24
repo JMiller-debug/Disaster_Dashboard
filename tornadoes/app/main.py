@@ -8,14 +8,20 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes import router
+from app.services.nws import NWSService
 from app.services.spc import SPCService
+from app.services.swdi import SWDIService
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:
+    app.state.nws = NWSService()
     app.state.spc = SPCService()
+    app.state.swdi = SWDIService()  # Initialize SWDI
     yield
+    await app.state.nws.close()
     await app.state.spc.close()
+    await app.state.swdi.close()
 
 
 app = FastAPI(title="Tornadoes Service", lifespan=lifespan)
