@@ -39,3 +39,9 @@
 #sidebar:hover::-webkit-scrollbar-thumb {
 	background: #3f4355;
 }
+
+.layer-tab.active {
+	background-color: var(--color-accent);
+	border-color: var(--color-accent);
+	color: #fff;
+}

@@ -3,34 +3,66 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Earthquake Dashboard</title>
+    <title>Disaster Dashboard</title>
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body class="h-screen w-screen overflow-hidden">
     <div id="app" class="flex h-full w-full">
 
       <!-- Sidebar -->
-      <aside id="sidebar" class="flex flex-col gap-5 p-5 bg-surface border-r border-border overflow-y-auto"
+      <aside id="sidebar" class="flex flex-col gap-4 p-5 bg-surface border-r border-border overflow-y-auto"
         style="width: 280px; min-width: 200px; max-width: 480px;">
-        <h1 class="text-lg font-semibold text-accent">Earthquakes</h1>
+        <h1 class="text-lg font-semibold text-accent">Disaster Dashboard</h1>
 
-        <!-- Magnitude slider -->
+        <!-- Layer tabs -->
         <div class="flex flex-col gap-2">
-          <label class="text-xs uppercase tracking-wider text-slate-500">
-            Min magnitude: <span id="min-mag-value" class="text-slate-300">0</span>
-          </label>
-          <input id="min-mag" type="range" min="0" max="9" step="0.5" value="0"
-            class="w-full accent-accent" />
+          <label class="text-xs uppercase tracking-wider text-slate-500">Layer</label>
+          <div id="layer-tabs" class="grid grid-cols-2 gap-1">
+            <button class="layer-tab py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-layer="earthquakes">🌍 Earthquakes</button>
+            <button class="layer-tab py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-layer="tornadoes">🌪 Tornadoes</button>
+            <button class="layer-tab py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-layer="cyclones">🌀 Cyclones</button>
+            <button class="layer-tab py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-layer="fires">🔥 Fires</button>
+          </div>
         </div>
 
-        <!-- Time window tabs -->
-        <div class="flex flex-col gap-2">
+        <!-- Earthquake-specific controls -->
+        <div id="eq-controls" class="flex flex-col gap-3">
+          <div class="flex flex-col gap-2">
+            <label class="text-xs uppercase tracking-wider text-slate-500">
+              Min magnitude: <span id="min-mag-value" class="text-slate-300">0</span>
+            </label>
+            <input id="min-mag" type="range" min="0" max="9" step="0.5" value="0"
+              class="w-full accent-accent" />
+          </div>
+          <div class="flex flex-col gap-2">
+            <label class="text-xs uppercase tracking-wider text-slate-500">Time window</label>
+            <div id="window-tabs" class="flex gap-1">
+              <button class="tab flex-1 py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-window="hour">1h</button>
+              <button class="tab flex-1 py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-window="day">24h</button>
+              <button class="tab flex-1 py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-window="week">7d</button>
+              <button class="tab flex-1 py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-window="month">30d</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tornado/Cyclone time window (shared) -->
+        <div id="tw-controls" class="flex flex-col gap-2 hidden">
           <label class="text-xs uppercase tracking-wider text-slate-500">Time window</label>
-          <div id="window-tabs" class="flex gap-1">
-            <button class="tab flex-1 py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-window="hour">1h</button>
-            <button class="tab flex-1 py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-window="day">24h</button>
-            <button class="tab flex-1 py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-window="week">7d</button>
-            <button class="tab flex-1 py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-window="month">30d</button>
+          <div id="tw-tabs" class="flex gap-1">
+            <button class="tw-tab flex-1 py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-window="hour">1h</button>
+            <button class="tw-tab flex-1 py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-window="day">24h</button>
+            <button class="tw-tab flex-1 py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-window="week">7d</button>
+            <button class="tw-tab flex-1 py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-window="month">30d</button>
+          </div>
+        </div>
+
+        <!-- Fires day-range control -->
+        <div id="fire-controls" class="flex flex-col gap-2 hidden">
+          <label class="text-xs uppercase tracking-wider text-slate-500">Detection window</label>
+          <div id="fire-tabs" class="flex gap-1">
+            <button class="fire-tab flex-1 py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-days="1">24h</button>
+            <button class="fire-tab flex-1 py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-days="2">48h</button>
+            <button class="fire-tab flex-1 py-1.5 rounded-md text-xs border border-border bg-[#0f1117] text-slate-500 cursor-pointer hover:text-slate-200 hover:border-slate-500 transition-colors" data-days="7">7d</button>
           </div>
         </div>
 
