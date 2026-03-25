@@ -18,6 +18,7 @@ logging.basicConfig(level=logging.INFO)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:
+    """`Lifespan` context manager handler."""
     app.state.nws = NWSService()
     app.state.spc = SPCService()
     app.state.swdi = SWDIService()  # Initialize SWDI

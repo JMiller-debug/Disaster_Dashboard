@@ -4,6 +4,8 @@ from pydantic import BaseModel
 
 
 class StormProperties(BaseModel):
+    """Base properties of the storm."""
+
     name: str | None
     basin: str | None  # e.g. "Atlantic", "Eastern Pacific"
     classification: str | None  # TD, TS, HU, TY etc.
@@ -14,6 +16,8 @@ class StormProperties(BaseModel):
 
 
 class StormFeature(BaseModel):
+    """Top level storm details."""
+
     type: str
     id: str
     properties: StormProperties
@@ -30,6 +34,8 @@ class ForecastTrack(BaseModel):
 
 
 class CycloneCollection(BaseModel):
+    """Collection of StormFeatures."""
+
     type: str = "FeatureCollection"
     features: list[StormFeature]
     tracks: list[ForecastTrack] = []

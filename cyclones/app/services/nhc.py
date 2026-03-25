@@ -1,4 +1,5 @@
-"""NOAA NHC + GDACS cyclone service (global coverage).
+"""
+NOAA NHC + GDACS cyclone service (global coverage).
 
 Basins covered:
   NHC   — Atlantic (AL), Eastern Pacific (EP), Central Pacific (CP)
@@ -9,10 +10,10 @@ Basins covered:
 import asyncio
 import logging
 import re
-import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 
 import httpx
+from defusedxml import ElementTree
 from shared.cache import TTLCache
 from shared.http import make_client
 
@@ -38,9 +39,27 @@ _DEDUP_DEGREES = 5.0
 
 CACHE_TTL = 360  # 6 minutes
 
+TITLE_MAP = [
+    ("SUPER TYPHOON", "STY"),
+    ("TYPHOON", "TY"),
+    ("TROPICAL STORM", "TS"),
+    ("TROPICAL DEPRESSION", "TD"),
+    ("CYCLONE", "TC"),
+]
+
+HURRICANE_TIERS = [
+    (137, "HU5"),
+    (113, "HU4"),
+    (96, "HU3"),
+]
+
+ALERT_MAP = {"GREEN": "TD", "ORANGE": "TS", "RED": "TY"}
+
 
 @dataclass(frozen=True)
 class Basin:
+    """Basin Class to identify Cyclone locations."""
+
     name: str
     lat_min: float
     lat_max: float
@@ -48,6 +67,7 @@ class Basin:
     lon_max: float
 
     def contains(self, lat: float, lon: float) -> bool:
+        """Check if the basin contains the cyclone."""
         return (
             self.lat_min <= lat <= self.lat_max and self.lon_min <= lon <= self.lon_max
         )
@@ -67,6 +87,8 @@ _FALLBACK = "Atlantic"
 
 @dataclass
 class _RawStorm:
+    """RawStorm data properties."""
+
     storm_id: str
     name: str | None
     basin: str
@@ -81,14 +103,19 @@ class _RawStorm:
 
 
 class NHCService:
+    """American National Hurricane Centre service."""
+
     def __init__(self) -> None:
+        """Class Init."""
         self._client = make_client(timeout=10.0)
         self._cache: TTLCache[CycloneCollection] = TTLCache()
 
     async def close(self) -> None:
+        """Close connection to NHC."""
         await self._client.aclose()
 
     async def fetch(self) -> CycloneCollection:
+        """Fetch data."""
         if cached := self._cache.get("cyclones"):
             return cached
 
@@ -177,9 +204,9 @@ _GDACS_NS = {
 def _parse_gdacs_rss(xml_text: str) -> list[_RawStorm]:
     storms: list[_RawStorm] = []
     try:
-        root = ET.fromstring(xml_text)
-    except ET.ParseError as exc:
-        logger.exception("GDACS RSS parse error: %s", exc)
+        root = ElementTree.fromstring(xml_text)
+    except ElementTree.ParseError:
+        logger.exception("GDACS RSS parse error: %s")
         return storms
 
     for item in root.iter("item"):
@@ -251,27 +278,19 @@ def _parse_gdacs_wind(text: str) -> int | None:
 def _gdacs_alert_to_class(title: str, alert: str, wind_kt: int | None) -> str:
     """Map GDACS alert level + title keywords to a short classification code."""
     t = title.upper()
-    if "SUPER TYPHOON" in t:
-        return "STY"
-    if "TYPHOON" in t:
-        return "TY"
+
     if "HURRICANE" in t:
-        # Rough Saffir-Simpson from wind speed
-        if wind_kt and wind_kt >= 137:
-            return "HU5"
-        if wind_kt and wind_kt >= 113:
-            return "HU4"
-        if wind_kt and wind_kt >= 96:
-            return "HU3"
-        return "HU"
-    if "TROPICAL STORM" in t:
-        return "TS"
-    if "TROPICAL DEPRESSION" in t:
-        return "TD"
-    if "CYCLONE" in t:
-        return "TC"
-    # Fallback: use alert level
-    return {"GREEN": "TD", "ORANGE": "TS", "RED": "TY"}.get(alert, "TC")
+        return next(
+            (
+                code
+                for threshold, code in HURRICANE_TIERS
+                if wind_kt and wind_kt >= threshold
+            ),
+            "HU",
+        )
+
+    keyword_match = next((code for keyword, code in TITLE_MAP if keyword in t), None)
+    return keyword_match or ALERT_MAP.get(alert, "TC")
 
 
 def _infer_basin(lat: float, lon: float) -> str:
@@ -337,12 +356,12 @@ async def _fetch_nhc_track(
             track=track_geojson,
             cone=cone_geojson,
         )
-    except Exception:
+    except Exception:  # noqa: BLE001
         logger.warning("Failed to fetch NHC track for %s", storm_id)
         return None
 
 
-def _xt(el: ET.Element, tag: str, ns: dict | None = None) -> str | None:
+def _xt(el: ElementTree.Element, tag: str, ns: dict | None = None) -> str | None:
     child = el.find(tag, ns or {})
     return child.text.strip() if child is not None and child.text else None
 

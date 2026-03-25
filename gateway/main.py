@@ -1,3 +1,5 @@
+"""Thin gateway for the natural disaster microservices."""
+
 import asyncio
 import logging
 from collections.abc import AsyncIterator
@@ -61,7 +63,7 @@ async def refresh_openapi_docs(app: FastAPI) -> dict[str, Any]:
             return_exceptions=True,
         )
 
-    for name, result in zip(SERVICES.keys(), results):
+    for name, result in zip(SERVICES.keys(), results, strict=True):
         if isinstance(result, Exception):
             logger.error("Failed to fetch schema for %s: %s", name, result)
             service_status[name] = f"unreachable ({type(result).__name__})"
@@ -102,7 +104,7 @@ async def refresh_openapi_docs(app: FastAPI) -> dict[str, Any]:
             # Strip a leading /api segment if present so we don't double it.
             # e.g.  /api/earthquakes  →  /earthquakes
             #       /earthquakes      →  /earthquakes  (already clean)
-            tail = path[4:] if path.startswith("/api") else path
+            tail = path.removeprefix("/api")
             gateway_path = f"/api/{name}{tail}"
 
             # Namespace operationIds and $refs inside each operation
@@ -135,7 +137,7 @@ async def refresh_openapi_docs(app: FastAPI) -> dict[str, Any]:
 
 
 async def _fetch_service_schema(
-    client: httpx.AsyncClient, name: str, base_url: str
+    client: httpx.AsyncClient, base_url: str
 ) -> dict[str, Any]:
     """Fetch and return the raw OpenAPI JSON from a single microservice."""
     url = f"{base_url}/openapi.json"
@@ -145,7 +147,7 @@ async def _fetch_service_schema(
     return resp.json()
 
 
-def _rewrite_refs(obj: Any, name_map: dict[str, str]) -> None:
+def _rewrite_refs(obj: Any, name_map: dict[str, str]) -> None:  # noqa: ANN401
     """
     Recursively rewrite ``$ref`` values in-place.
 
@@ -180,11 +182,12 @@ async def _discovery_loop(app: FastAPI) -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """`Lifespan` context manager handler."""
     # Shared client for all proxied requests — persistent connection pools per host
     app.state.proxy_client = httpx.AsyncClient(timeout=30.0, follow_redirects=True)
     try:
         await refresh_openapi_docs(app)
-    except Exception:
+    except Exception:  # noqa: BLE001
         logger.warning("Initial schema sync failed — background task will retry")
 
     task = asyncio.create_task(_discovery_loop(app))
@@ -260,7 +263,7 @@ async def proxy(service: str, path: str, request: Request) -> Response:
         target_url = f"{target_url}?{request.url.query}"
 
     # Strip hop-by-hop headers that must not be forwarded
-    HOP_BY_HOP = {
+    HOP_BY_HOP = {  # noqa: N806
         "connection",
         "keep-alive",
         "transfer-encoding",

@@ -16,6 +16,7 @@ logging.basicConfig(level=logging.INFO)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:
+    """`Lifespan` context manager handler."""
     app.state.usgs = USGSService()
     yield
     await app.state.usgs.close()
