@@ -17,9 +17,7 @@ def _svc(request: Request) -> FIRMSService:
 @router.get("/fires")
 async def list_fires(
     request: Request,
-    sensor: Annotated[
-        Sensor, Query(description="Satellite sensor")
-    ] = Sensor.VIIRS_SNPP,
+    sensor: Annotated[Sensor, Query(description="Satellite sensor")] = None,
     days: Annotated[DayRange, Query(description="Detection window")] = DayRange.ONE,
 ) -> FireCollection:
     try:

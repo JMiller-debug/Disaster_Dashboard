@@ -12,8 +12,9 @@ class DayRange(StrEnum):
 
 
 class Sensor(StrEnum):
-    VIIRS_SNPP = "VIIRS_SNPP_NRT"
+    VIIRS_NOAA21 = "VIIRS_NOAA21"
     VIIRS_NOAA20 = "VIIRS_NOAA20_NRT"
+    VIIRS_SNPP = "VIIRS_SNPP_NRT"
     MODIS = "MODIS_NRT"
 
 
