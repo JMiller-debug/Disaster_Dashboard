@@ -3,8 +3,9 @@
 import logging
 import time
 
-import httpx
 from shared.cache import TTLCache
+from shared.http import make_client
+
 
 from app.models import EarthquakeCollection, EarthquakeFeature, TimeWindow
 
@@ -44,7 +45,7 @@ class USGSService:
     """Fetches and caches USGS earthquake feeds."""
 
     def __init__(self) -> None:
-        self._client = httpx.AsyncClient(timeout=10.0)
+        self._client = make_client(timeout=10.0)
         self._cache: TTLCache[EarthquakeCollection] = TTLCache()
 
     async def close(self) -> None:

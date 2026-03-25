@@ -1,5 +1,6 @@
 """Earthquakes microservice entry point."""
 
+import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
@@ -9,6 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes import router
 from app.services.usgs import USGSService
+
+logging.basicConfig(level=logging.INFO)
 
 
 @asynccontextmanager

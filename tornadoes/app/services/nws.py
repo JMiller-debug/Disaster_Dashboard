@@ -3,9 +3,9 @@
 import asyncio
 import logging
 
-import httpx
 from pydantic import ValidationError
 from shared.cache import TTLCache
+from shared.http import make_client
 
 from app.models import (
     TimeWindow,
@@ -23,10 +23,7 @@ CACHE_TTL = 60
 
 class NWSService:
     def __init__(self) -> None:
-        self._client = httpx.AsyncClient(
-            timeout=10.0,
-            headers={"User-Agent": "DisasterDashboard/1.0 (contact@example.com)"},
-        )
+        self._client = make_client(timeout=10.0)
         self._cache: TTLCache[TornadoCollection] = TTLCache()
 
     async def close(self) -> None:

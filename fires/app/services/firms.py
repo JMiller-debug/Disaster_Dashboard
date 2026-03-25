@@ -5,7 +5,8 @@ import io
 import logging
 import os
 
-import httpx
+from shared.http import make_client
+
 
 from app.models import DayRange, FireCollection, FireFeature, FireProperties, Sensor
 from shared.cache import TTLCache
@@ -23,7 +24,7 @@ CACHE_TTL = 600  # 10 minutes — FIRMS updates ~every 3h for NRT feeds
 
 class FIRMSService:
     def __init__(self) -> None:
-        self._client = httpx.AsyncClient(timeout=30.0)  # world CSV can be large
+        self._client = make_client(timeout=30.0)
         self._cache: TTLCache[FireCollection] = TTLCache()
         self._key = os.environ["FIRMS_MAP_KEY"]
 

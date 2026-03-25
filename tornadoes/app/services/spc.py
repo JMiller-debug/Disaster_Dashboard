@@ -5,7 +5,7 @@ import io
 import logging
 from datetime import UTC, datetime, timedelta
 
-import httpx
+from shared.http import make_client
 
 from app.models import (
     TornadoCollection,
@@ -24,7 +24,7 @@ CACHE_TTL = 3600  # historical data doesn't change, cache for 1h
 
 class SPCService:
     def __init__(self) -> None:
-        self._client = httpx.AsyncClient(timeout=30.0)
+        self._client = make_client(timeout=30.0)
         self._cache: TTLCache[list[TornadoFeature]] = TTLCache()
 
     async def close(self) -> None:

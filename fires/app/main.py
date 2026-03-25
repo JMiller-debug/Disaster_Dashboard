@@ -1,5 +1,6 @@
 """Fires microservice entry point."""
 
+import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
@@ -9,6 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes import router
 from app.services.firms import FIRMSService
+
+logging.basicConfig(level=logging.INFO)
 
 
 @asynccontextmanager

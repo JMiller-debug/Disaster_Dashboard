@@ -1,5 +1,6 @@
 """Tornadoes microservice entry point."""
 
+import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
@@ -11,6 +12,8 @@ from app.routes import router
 from app.services.nws import NWSService
 from app.services.spc import SPCService
 from app.services.swdi import SWDIService
+
+logging.basicConfig(level=logging.INFO)
 
 
 @asynccontextmanager

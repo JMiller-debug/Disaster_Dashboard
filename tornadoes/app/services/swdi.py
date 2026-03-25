@@ -1,7 +1,8 @@
 import logging
 import re
 from datetime import UTC, datetime, timedelta
-import httpx
+from shared.http import make_client
+
 from app.models import (
     TimeWindow,
     TornadoCollection,
@@ -19,7 +20,7 @@ CACHE_TTL = 3600  # 1 hour
 
 class SWDIService:
     def __init__(self) -> None:
-        self._client = httpx.AsyncClient(timeout=30.0)
+        self._client = make_client(timeout=30.0)
         self._cache: TTLCache[TornadoCollection] = TTLCache()
 
     async def close(self) -> None:
