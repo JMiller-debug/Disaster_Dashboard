@@ -57,7 +57,7 @@ async def refresh_openapi_docs(app: FastAPI) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=5.0) as client:
         results = await asyncio.gather(
             *[
-                _fetch_service_schema(client, name, base_url)
+                _fetch_service_schema(client, base_url)
                 for name, base_url in SERVICES.items()
             ],
             return_exceptions=True,

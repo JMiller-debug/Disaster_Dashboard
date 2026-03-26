@@ -7,7 +7,9 @@
 	--color-accent: #f97316;
 }
 
-.tab.active {
+.tab.active,
+.tw-tab.active,
+.fire-tab.active {
 	background-color: var(--color-accent);
 	border-color: var(--color-accent);
 	color: #fff;

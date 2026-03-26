@@ -18,6 +18,7 @@ import type {
 	FireCollection,
 } from "../api";
 import { makePointStyle } from "./points";
+import { rebuildFireFeatures } from "./fires";
 
 export type MapMode = "heatmap" | "points";
 
@@ -30,6 +31,10 @@ const sources: Record<string, VectorSource> = {
 	cyclones: new VectorSource(),
 	fires: new VectorSource(),
 };
+
+// Raw fire features kept in module scope so the resolution-change
+// listener can re-aggregate without needing another API call.
+let _rawFireFeatures: FireCollection["features"] = [];
 
 // ── Tornado style ─────────────────────────────────────────────────────────────
 function makeTornadoStyle(type: string): Style {
@@ -54,19 +59,6 @@ function makeCycloneStyle(intensity: number | null): Style {
 			radius,
 			fill: new Fill({ color: `${color}99` }),
 			stroke: new Stroke({ color, width: 2 }),
-		}),
-	});
-}
-
-// ── Fire style ────────────────────────────────────────────────────────────────
-function makeFireStyle(frp: number | null): Style {
-	const power = frp ?? 0;
-	const radius = 3 + Math.min(Math.log1p(power) * 1.5, 10);
-	return new Style({
-		image: new Circle({
-			radius,
-			fill: new Fill({ color: "#f9731699" }),
-			stroke: new Stroke({ color: "#ef4444", width: 1 }),
 		}),
 	});
 }
@@ -98,9 +90,10 @@ export function createMap(target: string) {
 		visible: false,
 	});
 
+	// Fire layer — no static style function; each feature carries its own
+	// pre-computed Style instance set in rebuildFireFeatures().
 	const fireLayer = new VectorLayer({
 		source: sources.fires,
-		style: (f) => makeFireStyle(f.get("frp")),
 		visible: false,
 	});
 
@@ -115,6 +108,18 @@ export function createMap(target: string) {
 			fireLayer,
 		],
 		view: new View({ center: fromLonLat([0, 20]), zoom: 2 }),
+	});
+
+	// Re-aggregate fires whenever the map resolution changes (zoom in/out).
+	// Debounced so we don't thrash during a pinch/scroll gesture.
+	let _rezoomTimer: ReturnType<typeof setTimeout> | null = null;
+	map.getView().on("change:resolution", () => {
+		if (_rezoomTimer) clearTimeout(_rezoomTimer);
+		_rezoomTimer = setTimeout(() => {
+			if (_rawFireFeatures.length > 0) {
+				rebuildFireFeatures(_rawFireFeatures, sources.fires, map);
+			}
+		}, 150);
 	});
 
 	return {
@@ -135,7 +140,6 @@ export function updateEarthquakes(data: EarthquakeCollection) {
 
 export function updateTornadoes(data: TornadoCollection) {
 	sources.tornadoes.clear();
-	// Normalize: ensure each feature has geometry (skip nulls)
 	const valid = { ...data, features: data.features.filter((f) => f.geometry) };
 	sources.tornadoes.addFeatures(geojsonFormat.readFeatures(valid));
 }
@@ -145,9 +149,9 @@ export function updateCyclones(data: CycloneCollection) {
 	sources.cyclones.addFeatures(geojsonFormat.readFeatures(data));
 }
 
-export function updateFires(data: FireCollection) {
-	sources.fires.clear();
-	sources.fires.addFeatures(geojsonFormat.readFeatures(data));
+export function updateFires(data: FireCollection, map: Map) {
+	_rawFireFeatures = data.features;
+	rebuildFireFeatures(_rawFireFeatures, sources.fires, map);
 }
 
 export function setMode(

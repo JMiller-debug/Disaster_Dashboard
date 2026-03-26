@@ -33,6 +33,7 @@ import {
 	setActiveFireTab,
 	setLoading,
 	initRefreshBtn,
+	initDisclaimer,
 } from "./ui";
 import { createPopup } from "./map/popup";
 
@@ -290,7 +291,7 @@ async function load() {
 			}
 			case "fires": {
 				const data = await fetchFires(fireDays);
-				updateFires(data);
+				updateFires(data, map);
 				renderFireList(data.features, flyToFire);
 				document.getElementById("quake-count")!.textContent =
 					`${data.count} fire detections`;
@@ -305,17 +306,24 @@ async function load() {
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────
+initDisclaimer();
 initResize(() => map.updateSize());
 initRefreshBtn(load);
 setActiveTab(timeWindow);
-setActiveTwTab(twWindow);
-setActiveFireTab(fireDays);
+setActiveTwTab(twWindow); // already present ✓
+setActiveFireTab(fireDays); // already present ✓
 
 document
 	.querySelector<HTMLButtonElement>('.layer-tab[data-layer="earthquakes"]')
 	?.classList.add("active");
 document
 	.querySelector<HTMLButtonElement>('.tab[data-window="day"]')
+	?.classList.add("active");
+document
+	.querySelector<HTMLButtonElement>('.tw-tab[data-window="day"]')
+	?.classList.add("active");
+document
+	.querySelector<HTMLButtonElement>('.fire-tab[data-days="1"]')
 	?.classList.add("active");
 
 applyLayerVisibility();

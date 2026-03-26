@@ -11,13 +11,14 @@ class DayRange(StrEnum):
     ONE = "1"
     TWO = "2"
     THREE = "3"
-    SEVEN = "7"
+    FOUR = "4"
+    FIVE = "5"
 
 
 class Sensor(StrEnum):
     """Sensors available to query."""
 
-    VIIRS_NOAA21 = "VIIRS_NOAA21"
+    VIIRS_NOAA21 = "VIIRS_NOAA21_NRT"
     VIIRS_NOAA20 = "VIIRS_NOAA20_NRT"
     VIIRS_SNPP = "VIIRS_SNPP_NRT"
     MODIS = "MODIS_NRT"

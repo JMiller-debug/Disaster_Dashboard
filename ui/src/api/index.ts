@@ -62,7 +62,7 @@ export function fetchCyclones(): Promise<CycloneCollection> {
 // ── Fires ────────────────────────────────────────────────────────────────────
 import type { FireCollection } from "./types";
 
-export type DayRange = "1" | "2" | "3" | "7";
+export type DayRange = "1" | "2" | "3" | "4" | "5";
 
 export function fetchFires(days: DayRange = "1"): Promise<FireCollection> {
 	return get("/api/fires/fires", { days });
