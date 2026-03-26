@@ -20,6 +20,7 @@ async def list_fires(
     sensor: Annotated[Sensor, Query(description="Satellite sensor")] = None,
     days: Annotated[DayRange, Query(description="Detection window")] = DayRange.ONE,
 ) -> FireCollection:
+    """Endpoint listing fires."""
     try:
         return await _svc(request).fetch(sensor=sensor, days=days)
     except Exception as exc:

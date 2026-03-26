@@ -4,6 +4,8 @@ export {
 	renderCycloneList,
 	renderFireList,
 	setActiveTab,
+	setActiveTwTab,
+	setActiveFireTab,
 } from "./sidebar";
 export { initResize } from "./resize";
 export { createToggle } from "./toggle";

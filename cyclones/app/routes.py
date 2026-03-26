@@ -14,6 +14,7 @@ def _svc(request: Request) -> NHCService:
 
 @router.get("/cyclones")
 async def list_cyclones(request: Request) -> CycloneCollection:
+    """Endpoint returnging list of cylcones."""
     try:
         return await _svc(request).fetch()
     except Exception as exc:

@@ -8,6 +8,9 @@ import {
 	type DataLayer,
 	type DayRange,
 	type EarthquakeFeature,
+	type TornadoFeature,
+	type StormFeature,
+	type FireFeature,
 } from "./api";
 import {
 	createMap,
@@ -26,6 +29,8 @@ import {
 	initResize,
 	createToggle,
 	setActiveTab,
+	setActiveTwTab,
+	setActiveFireTab,
 	setLoading,
 	initRefreshBtn,
 } from "./ui";
@@ -71,14 +76,12 @@ function applyLayerVisibility() {
 	cycloneLayer.setVisible(isCyclone);
 	fireLayer.setVisible(isFire);
 
-	// Sidebar controls
 	document.getElementById("eq-controls")!.classList.toggle("hidden", !isEq);
 	document
 		.getElementById("tw-controls")!
 		.classList.toggle("hidden", !isTornado);
 	document.getElementById("fire-controls")!.classList.toggle("hidden", !isFire);
 
-	// Map mode toggle only meaningful for earthquakes
 	const toggleBtn =
 		document.querySelector<HTMLButtonElement>(".map-mode-toggle");
 	if (toggleBtn) toggleBtn.style.display = isEq ? "" : "none";
@@ -90,22 +93,98 @@ function applyLayerVisibility() {
 	}
 }
 
-// ── Click interaction ──────────────────────────────────────────────────────
+// ── Fly-to helpers ─────────────────────────────────────────────────────────
+function flyToCoords(coords: [number, number], zoom = 6) {
+	map.getView().animate({ center: fromLonLat(coords), zoom, duration: 600 });
+}
+
+function flyToEarthquake(feature: EarthquakeFeature) {
+	const [lng, lat] = feature.geometry.coordinates;
+	const dest = fromLonLat([lng, lat]);
+	if (mapMode !== "points") {
+		mapMode = "points";
+		setMode(earthquakeHeatmap, earthquakePoints, mapMode);
+	}
+	map.getView().animate({ center: dest, zoom: 6, duration: 600 }, () => {
+		popup.show([{ coords: dest, props: feature.properties }]);
+	});
+}
+
+function flyToTornado(feature: TornadoFeature) {
+	const geom = feature.geometry;
+	let coords: [number, number] | null = null;
+	if (geom.type === "Point") {
+		const c = geom.coordinates as [number, number];
+		coords = c;
+	} else if (geom.type === "LineString") {
+		const c = geom.coordinates as [number, number][];
+		coords = c[0];
+	}
+	if (!coords) return;
+	const dest = fromLonLat(coords);
+	map.getView().animate({ center: dest, zoom: 7, duration: 600 }, () => {
+		popup.showTornado(dest, feature.properties);
+	});
+}
+
+function flyToCyclone(feature: StormFeature) {
+	const [lng, lat] = feature.geometry.coordinates;
+	const dest = fromLonLat([lng, lat]);
+	map.getView().animate({ center: dest, zoom: 5, duration: 600 }, () => {
+		popup.showCyclone(dest, feature.properties, feature.id);
+	});
+}
+
+function flyToFire(feature: FireFeature) {
+	const [lng, lat] = feature.geometry.coordinates;
+	const dest = fromLonLat([lng, lat]);
+	map.getView().animate({ center: dest, zoom: 8, duration: 600 }, () => {
+		popup.showFire(dest, feature.properties);
+	});
+}
+
+// ── Map click interaction ──────────────────────────────────────────────────
 map.on("click", (e) => {
 	popup.hide();
-	if (activeLayer !== "earthquakes" || mapMode !== "points") return;
 
-	const items: { coords: number[]; props: EarthquakeFeature["properties"] }[] =
-		[];
+	if (activeLayer === "earthquakes" && mapMode === "points") {
+		// Collect ALL features at this pixel so the picker list works for clusters
+		const items: {
+			coords: number[];
+			props: EarthquakeFeature["properties"];
+		}[] = [];
+		map.forEachFeatureAtPixel(e.pixel, (feat) => {
+			const props = feat.getProperties() as EarthquakeFeature["properties"];
+			if (props.mag !== undefined) items.push({ coords: e.coordinate, props });
+		});
+		if (items.length > 0) popup.show(items);
+		return;
+	}
+
+	// For all other layers just grab the first feature hit
 	map.forEachFeatureAtPixel(e.pixel, (feat) => {
-		const props = feat.getProperties() as EarthquakeFeature["properties"];
-		if (feat.getGeometry()) items.push({ coords: e.coordinate, props });
+		const props = feat.getProperties();
+
+		if (activeLayer === "tornadoes") {
+			popup.showTornado(e.coordinate, props as TornadoFeature["properties"]);
+			return true;
+		}
+		if (activeLayer === "cyclones") {
+			popup.showCyclone(
+				e.coordinate,
+				props as StormFeature["properties"],
+				String(feat.getId() ?? ""),
+			);
+			return true;
+		}
+		if (activeLayer === "fires") {
+			popup.showFire(e.coordinate, props as FireFeature["properties"]);
+			return true;
+		}
 	});
-	if (items.length > 0) popup.show(items);
 });
 
 map.on("pointermove", (e) => {
-	if (activeLayer !== "earthquakes" || mapMode !== "points") return;
 	const hit = map.hasFeatureAtPixel(e.pixel);
 	map.getTargetElement().style.cursor = hit ? "pointer" : "";
 });
@@ -134,6 +213,10 @@ document.getElementById("layer-tabs")!.addEventListener("click", (e) => {
 			t.classList.toggle("active", t.dataset.layer === activeLayer),
 		);
 
+	// Sync time-range tab highlights to current state
+	setActiveTwTab(twWindow);
+	setActiveFireTab(fireDays);
+
 	applyLayerVisibility();
 	popup.hide();
 	load();
@@ -158,16 +241,12 @@ windowTabs.addEventListener("click", (e) => {
 	load();
 });
 
-// ── Tornado/Cyclone time window ────────────────────────────────────────────
+// ── Tornado time window ────────────────────────────────────────────────────
 document.getElementById("tw-tabs")!.addEventListener("click", (e) => {
 	const tab = (e.target as HTMLElement).closest<HTMLButtonElement>(".tw-tab");
 	if (!tab?.dataset.window) return;
 	twWindow = tab.dataset.window as TimeWindow;
-	document
-		.querySelectorAll<HTMLButtonElement>(".tw-tab")
-		.forEach((t) =>
-			t.classList.toggle("active", t.dataset.window === twWindow),
-		);
+	setActiveTwTab(twWindow);
 	load();
 });
 
@@ -176,9 +255,7 @@ document.getElementById("fire-tabs")!.addEventListener("click", (e) => {
 	const tab = (e.target as HTMLElement).closest<HTMLButtonElement>(".fire-tab");
 	if (!tab?.dataset.days) return;
 	fireDays = tab.dataset.days as DayRange;
-	document
-		.querySelectorAll<HTMLButtonElement>(".fire-tab")
-		.forEach((t) => t.classList.toggle("active", t.dataset.days === fireDays));
+	setActiveFireTab(fireDays);
 	load();
 });
 
@@ -190,7 +267,7 @@ async function load() {
 			case "earthquakes": {
 				const data = await fetchEarthquakes(timeWindow, minMag);
 				updateEarthquakes(data);
-				renderList(data.features, flyTo);
+				renderList(data.features, flyToEarthquake);
 				document.getElementById("quake-count")!.textContent =
 					`${data.count} earthquakes`;
 				break;
@@ -198,7 +275,7 @@ async function load() {
 			case "tornadoes": {
 				const data = await fetchTornadoes(twWindow);
 				updateTornadoes(data);
-				renderTornadoList(data.features);
+				renderTornadoList(data.features, flyToTornado);
 				document.getElementById("quake-count")!.textContent =
 					`${data.count} tornado events`;
 				break;
@@ -206,7 +283,7 @@ async function load() {
 			case "cyclones": {
 				const data = await fetchCyclones();
 				updateCyclones(data);
-				renderCycloneList(data.features);
+				renderCycloneList(data.features, flyToCyclone);
 				document.getElementById("quake-count")!.textContent =
 					`${data.count} active cyclones`;
 				break;
@@ -214,7 +291,7 @@ async function load() {
 			case "fires": {
 				const data = await fetchFires(fireDays);
 				updateFires(data);
-				renderFireList(data.features);
+				renderFireList(data.features, flyToFire);
 				document.getElementById("quake-count")!.textContent =
 					`${data.count} fire detections`;
 				break;
@@ -227,35 +304,18 @@ async function load() {
 	}
 }
 
-function flyTo(feature: EarthquakeFeature) {
-	const [lng, lat] = feature.geometry.coordinates;
-	const dest = fromLonLat([lng, lat]);
-	if (mapMode !== "points") {
-		mapMode = "points";
-		setMode(earthquakeHeatmap, earthquakePoints, mapMode);
-	}
-	map.getView().animate({ center: dest, zoom: 6, duration: 600 }, () => {
-		popup.show([{ coords: dest, props: feature.properties }]);
-	});
-}
-
 // ── Init ───────────────────────────────────────────────────────────────────
 initResize(() => map.updateSize());
 initRefreshBtn(load);
 setActiveTab(timeWindow);
+setActiveTwTab(twWindow);
+setActiveFireTab(fireDays);
 
-// Activate default layer tab
 document
 	.querySelector<HTMLButtonElement>('.layer-tab[data-layer="earthquakes"]')
 	?.classList.add("active");
 document
 	.querySelector<HTMLButtonElement>('.tab[data-window="day"]')
-	?.classList.add("active");
-document
-	.querySelector<HTMLButtonElement>('.tw-tab[data-window="day"]')
-	?.classList.add("active");
-document
-	.querySelector<HTMLButtonElement>('.fire-tab[data-days="1"]')
 	?.classList.add("active");
 
 applyLayerVisibility();

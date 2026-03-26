@@ -11,6 +11,7 @@ import asyncio
 import logging
 import re
 from dataclasses import dataclass, field
+from xml.etree.ElementTree import Element
 
 import httpx
 from defusedxml import ElementTree
@@ -361,7 +362,7 @@ async def _fetch_nhc_track(
         return None
 
 
-def _xt(el: ElementTree.Element, tag: str, ns: dict | None = None) -> str | None:
+def _xt(el: Element, tag: str, ns: dict | None = None) -> str | None:
     child = el.find(tag, ns or {})
     return child.text.strip() if child is not None and child.text else None
 

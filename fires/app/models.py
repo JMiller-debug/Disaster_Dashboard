@@ -1,10 +1,13 @@
 """Fire hotspot models."""
 
 from enum import StrEnum
+
 from pydantic import BaseModel
 
 
 class DayRange(StrEnum):
+    """Day range for time filters."""
+
     ONE = "1"
     TWO = "2"
     THREE = "3"
@@ -12,6 +15,8 @@ class DayRange(StrEnum):
 
 
 class Sensor(StrEnum):
+    """Sensors available to query."""
+
     VIIRS_NOAA21 = "VIIRS_NOAA21"
     VIIRS_NOAA20 = "VIIRS_NOAA20_NRT"
     VIIRS_SNPP = "VIIRS_SNPP_NRT"
@@ -19,6 +24,8 @@ class Sensor(StrEnum):
 
 
 class FireProperties(BaseModel):
+    """Fire Properties model."""
+
     brightness: float | None  # brightness temperature (K)
     frp: float | None  # fire radiative power (MW)
     confidence: str | None  # low / nominal / high (VIIRS) or 0-100 (MODIS)
@@ -29,6 +36,8 @@ class FireProperties(BaseModel):
 
 
 class FireFeature(BaseModel):
+    """Fire Feature."""
+
     type: str = "Feature"
     id: str
     properties: FireProperties
@@ -36,6 +45,8 @@ class FireFeature(BaseModel):
 
 
 class FireCollection(BaseModel):
+    """Collection of Fire Features."""
+
     type: str = "FeatureCollection"
     features: list[FireFeature]
     count: int

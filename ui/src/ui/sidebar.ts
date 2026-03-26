@@ -14,6 +14,18 @@ export function setActiveTab(window: string) {
 	);
 }
 
+export function setActiveTwTab(window: string) {
+	document
+		.querySelectorAll<HTMLButtonElement>(".tw-tab")
+		.forEach((t) => t.classList.toggle("active", t.dataset.window === window));
+}
+
+export function setActiveFireTab(days: string) {
+	document
+		.querySelectorAll<HTMLButtonElement>(".fire-tab")
+		.forEach((t) => t.classList.toggle("active", t.dataset.days === days));
+}
+
 function relTime(isoOrMs: string | number): string {
 	const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
 	const ms = typeof isoOrMs === "number" ? isoOrMs : Date.parse(isoOrMs);
@@ -66,7 +78,10 @@ export function renderList(
 }
 
 // ── Tornadoes ────────────────────────────────────────────────────────────────
-export function renderTornadoList(features: TornadoFeature[]) {
+export function renderTornadoList(
+	features: TornadoFeature[],
+	onSelect: (f: TornadoFeature) => void,
+) {
 	listEl.innerHTML = "";
 	for (const f of features.slice(0, 50)) {
 		const { type, headline, severity, issued } = f.properties;
@@ -76,18 +91,30 @@ export function renderTornadoList(features: TornadoFeature[]) {
 				: type === "watch"
 					? "text-orange-400"
 					: "text-purple-400";
+
+		// Only attach click if geometry is a selectable point-like type
+		const geomType = f.geometry?.type;
+		const clickable =
+			geomType === "Point" ||
+			geomType === "LineString" ||
+			geomType === "Polygon";
+
 		listEl.appendChild(
 			li(
 				`<div class="text-xs font-bold uppercase ${color}">${type}</div>
          <div class="text-sm text-slate-200 truncate mt-0.5">${headline ?? "Tornado event"}</div>
          <div class="text-xs text-slate-500 mt-1">${severity ?? ""} · ${issued ? relTime(issued) : ""}`,
+				clickable ? () => onSelect(f) : undefined,
 			),
 		);
 	}
 }
 
 // ── Cyclones ──────────────────────────────────────────────────────────────────
-export function renderCycloneList(features: StormFeature[]) {
+export function renderCycloneList(
+	features: StormFeature[],
+	onSelect: (f: StormFeature) => void,
+) {
 	listEl.innerHTML = "";
 	if (features.length === 0) {
 		const empty = document.createElement("li");
@@ -109,13 +136,17 @@ export function renderCycloneList(features: StormFeature[]) {
 				`<div class="text-sm font-bold ${color}">${classification ?? "TC"} ${name ?? f.id}</div>
          <div class="text-xs text-slate-400 mt-0.5">${basin ?? ""} · ${intensity ? `${intensity} kt` : ""}</div>
          <div class="text-xs text-slate-500 mt-1">${timestamp ? relTime(timestamp) : ""}`,
+				() => onSelect(f),
 			),
 		);
 	}
 }
 
 // ── Fires ─────────────────────────────────────────────────────────────────────
-export function renderFireList(features: FireFeature[]) {
+export function renderFireList(
+	features: FireFeature[],
+	onSelect: (f: FireFeature) => void,
+) {
 	listEl.innerHTML = "";
 	// Sort by FRP descending (most intense fires first)
 	const sorted = [...features].sort(
@@ -128,6 +159,7 @@ export function renderFireList(features: FireFeature[]) {
 				`<div class="text-sm font-bold text-orange-400">${frp ? `${frp.toFixed(0)} MW` : "Fire"}</div>
          <div class="text-xs text-slate-400 mt-0.5">${satellite ?? ""} · ${confidence ?? ""} confidence · ${day_night === "D" ? "☀ Day" : "🌙 Night"}</div>
          <div class="text-xs text-slate-500 mt-1">${acquired ? relTime(acquired) : ""}`,
+				() => onSelect(f),
 			),
 		);
 	}

@@ -1,5 +1,8 @@
 """NASA FIRMS active fire service — worldwide coverage via JSON API."""
 
+import asyncio
+import csv
+import io
 import logging
 import os
 from datetime import UTC, datetime
@@ -34,12 +37,16 @@ SENSOR_FALLBACK_CHAIN: list[Sensor] = [
 
 
 class FIRMSService:
+    """FIRMS Service that returns historical fire data."""
+
     def __init__(self) -> None:
+        """Initialise service."""
         self._client = make_client(timeout=30.0)
         self._cache: TTLCache[FireCollection] = TTLCache()
         self._key = os.environ["FIRMS_MAP_KEY"]
 
     async def close(self) -> None:
+        """Close connection."""
         await self._client.aclose()
 
     async def check_quota(self) -> dict:
@@ -54,6 +61,7 @@ class FIRMSService:
         sensor: Sensor | None = None,
         days: DayRange = DayRange.ONE,
     ) -> FireCollection:
+        """Fetch records from the FIRMS API."""
         if sensor is None:
             return await self._fetch_all(days)
 
@@ -107,15 +115,13 @@ class FIRMSService:
             )
             self._cache.set(cache_key, collection, CACHE_TTL)
             return collection
-
-        raise RuntimeError(
+        err_msg = (
             f"All FIRMS sensors exhausted for days={days.value} — no data available"
         )
+        raise RuntimeError(err_msg)
 
     async def _fetch_all(self, days: DayRange) -> FireCollection:
         """Fetch from every sensor and merge into a single collection."""
-        import asyncio
-
         results = await asyncio.gather(
             *[self._fetch_one(s, days) for s in SENSOR_FALLBACK_CHAIN],
             return_exceptions=True,
@@ -148,7 +154,11 @@ class FIRMSService:
         )
 
     async def _fetch_one(self, sensor: Sensor, days: DayRange) -> FireCollection:
-        """Fetch a single sensor with no fallback logic (used during all-sensor merge)."""
+        """
+        Fetch a single sensor with no fallback logic.
+
+        Used during all-sensor merge.
+        """
         cache_key = f"{sensor}_{days}"
         if cached := self._cache.get(cache_key):
             return cached
@@ -172,7 +182,8 @@ class FIRMSService:
 
 
 def _parse_csv(sensor: Sensor, text: str) -> list[FireFeature]:
-    """Parse FIRMS CSV response into FireFeatures.
+    """
+    Parse FIRMS CSV response into FireFeatures.
 
     VIIRS columns:  latitude, longitude, bright_ti4, scan, track, acq_date,
                     acq_time, satellite, instrument, confidence, version,
@@ -181,8 +192,6 @@ def _parse_csv(sensor: Sensor, text: str) -> list[FireFeature]:
                     acq_time, satellite, instrument, confidence, version,
                     bright_t31, frp, daynight
     """
-    import csv, io
-
     features: list[FireFeature] = []
     reader = csv.DictReader(io.StringIO(text))
     for i, row in enumerate(reader):
